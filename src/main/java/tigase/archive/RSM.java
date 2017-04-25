@@ -1,47 +1,17 @@
-/*
- * RSM.java
- *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2012 "Artur Hefczyc" <artur.hefczyc@tigase.org>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. Look for COPYING file in the top folder.
- * If not, see http://www.gnu.org/licenses/.
- *
- */
-
-
-
 package tigase.archive;
-
-//~--- non-JDK imports --------------------------------------------------------
 
 import tigase.xml.Element;
 
 /**
  * Class description
- *
- *
  * @version        Enter version here..., 13/02/16
  * @author         Enter your name here...
  */
 public class RSM {
-	/** Field description */
 	protected static final String XMLNS           = "http://jabber.org/protocol/rsm";
 	private static final String[] SET_AFTER_PATH  = { "set", "after" };
 	private static final String[] SET_BEFORE_PATH = { "set", "before" };
 	private static final String[] SET_INDEX_PATH = { "set", "index" };
-
-	//~--- fields ---------------------------------------------------------------
 
 	String after  = null;
 	String before = null;
@@ -52,12 +22,7 @@ public class RSM {
 	int max = 100;
 	Integer index = null;
 
-	//~--- constructors ---------------------------------------------------------
-
 	/**
-	 * Constructs ...
-	 *
-	 *
 	 * @param e
 	 */
 	public RSM(int defaultMax) {
@@ -67,12 +32,9 @@ public class RSM {
 	public RSM() {
 	}
 	
-	//~--- get methods ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
 	 * @return
 	 */
 	public int getMax() {
@@ -81,8 +43,6 @@ public class RSM {
 
 	/**
 	 * Method description
-	 *
-	 *
 	 * @return
 	 */
 	public Integer getIndex() {
@@ -91,8 +51,6 @@ public class RSM {
 	
 	/**
 	 * Method description
-	 *
-	 *
 	 * @return
 	 */
 	public String getAfter() {
@@ -101,8 +59,6 @@ public class RSM {
 
 	/**
 	 * Method description
-	 *
-	 *
 	 * @return
 	 */
 	public String getBefore() {
@@ -116,8 +72,6 @@ public class RSM {
 	public Integer getCount() {
 		return count;
 	}
-	
-	//~--- set methods ----------------------------------------------------------
 
 	public void setFirst(String first) {
 		this.first = first;
@@ -133,8 +87,6 @@ public class RSM {
 	
 	/**
 	 * Method description
-	 *
-	 *
 	 * @param count
 	 * @param first
 	 * @param last
@@ -148,7 +100,6 @@ public class RSM {
 
 	/**
 	 * Set count and index of first result
-	 * 
 	 * @param count
 	 * @param index 
 	 */
@@ -158,8 +109,6 @@ public class RSM {
 		this.first = null;
 		this.last = null;
 	}
-	
-	//~--- methods --------------------------------------------------------------
 
 	public RSM fromElement(Element e) {
 		if (e == null) {
@@ -191,13 +140,10 @@ public class RSM {
 	
 	/**
 	 * Method description
-	 *
-	 *
 	 * @return
 	 */
 	public Element toElement() {
 		Element set = new Element("set");
-
 		set.setXMLNS(XMLNS);
 		if ((first != null) && (last != null) || count != null) {
 			if (first != null) {
@@ -225,10 +171,7 @@ public class RSM {
 
 	/**
 	 * Method description
-	 *
-	 *
 	 * @param e
-	 *
 	 * @return
 	 */
 	public static RSM parseRootElement(Element e, int defaultMax) {
@@ -237,16 +180,10 @@ public class RSM {
 	
 	/**
 	 * Method description
-	 *
-	 *
 	 * @param e
-	 *
 	 * @return
 	 */
 	public static RSM parseRootElement(Element e) {
 		return RSM.parseRootElement(e, 100);
 	}	
 }
-
-
-//~ Formatted in Tigase Code Convention on 13/02/16

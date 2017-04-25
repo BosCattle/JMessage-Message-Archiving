@@ -1,33 +1,6 @@
-/*
- * MessageArchiveComponent.java
- *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2013 "Tigase, Inc." <office@tigase.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. Look for COPYING file in the top folder.
- * If not, see http://www.gnu.org/licenses/.
- *
- */
-
-
-
 package tigase.archive;
 
-//~--- non-JDK imports --------------------------------------------------------
-
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -48,10 +21,6 @@ import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.*;
 
-/**
- *
- * @author andrzej
- */
 public class MessageArchiveComponent
 				extends AbstractMessageReceiver {
 	private static final Logger log = Logger.getLogger(MessageArchiveComponent.class
@@ -63,36 +32,20 @@ public class MessageArchiveComponent
 
 	private static final boolean			  DEF_TAGS_SUPPORT_PROP_VAL = false;
 	private static final String			  TAGS_SUPPORT_PROP_KEY = "tags-support";
-	
-	//~--- fields ---------------------------------------------------------------
 
 	private MessageArchiveRepository msg_repo = null;
 	private boolean tagsSupport = false;
 
-	//~--- constructors ---------------------------------------------------------
 
-	/**
-	 * Constructs ...
-	 *
-	 */
 	public MessageArchiveComponent() {
 		super();
 		setName("message-archive");
 	}
 
-	//~--- methods --------------------------------------------------------------
-
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param packet
-	 */
 	@Override
 	public void processPacket(Packet packet) {
 		if ((packet.getStanzaTo() != null) &&!getComponentId().equals(packet.getStanzaTo())) {
 			storeMessage(packet);
-
 			return;
 		}
 		try {
@@ -124,16 +77,7 @@ public class MessageArchiveComponent
 		}
 	}
 	
-	//~--- get methods ----------------------------------------------------------
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param params
-	 *
-	 * @return
-	 */
 	@Override
 	public Map<String, Object> getDefaults(Map<String, Object> params) {
 		Map<String, Object> defs   = super.getDefaults(params);
@@ -151,23 +95,14 @@ public class MessageArchiveComponent
 		return defs;
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @return
-	 */
+
 	@Override
 	public String getDiscoDescription() {
 		return "Message Archiving (XEP-0136) Support";
 	}
 
-	//~--- set methods ----------------------------------------------------------
-
 	/**
 	 * Method description
-	 *
-	 *
 	 * @param props
 	 * @throws tigase.conf.ConfigurationException
 	 */
@@ -234,7 +169,6 @@ public class MessageArchiveComponent
 		}
 	}
 
-	//~--- methods --------------------------------------------------------------
 
 	/**
 	 * Method description
@@ -356,7 +290,6 @@ public class MessageArchiveComponent
 
 	private void storeMessage(Packet packet) {
 		String ownerStr = packet.getAttributeStaticStr(OWNER_JID);
-
 		if (ownerStr != null) {
 			packet.getElement().removeAttribute(OWNER_JID);
 
@@ -387,8 +320,6 @@ public class MessageArchiveComponent
 			log.log(Level.INFO, "Owner attribute missing from packet: {0}", packet);
 		}
 	}
-
-	//~--- get methods ----------------------------------------------------------
 
 	private void getMessages(Packet packet, Element retrieve) throws XMPPException {
 		try {
@@ -452,6 +383,3 @@ public class MessageArchiveComponent
 		}
 	}
 }
-
-
-//~ Formatted in Tigase Code Convention on 13/10/15

@@ -1,31 +1,6 @@
-/*
- * MessageArchivePlugin.java
- *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2013 "Tigase, Inc." <office@tigase.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License,
- * or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. Look for COPYING file in the top folder.
- * If not, see http://www.gnu.org/licenses/.
- *
- */
-
-
-
 package tigase.archive;
 
-//~--- non-JDK imports --------------------------------------------------------
-
+import java.util.Objects;
 import tigase.db.NonAuthUserRepository;
 import tigase.db.TigaseDBException;
 
@@ -37,8 +12,6 @@ import tigase.util.DNSResolver;
 import tigase.xml.Element;
 
 import tigase.xmpp.*;
-
-//~--- JDK imports ------------------------------------------------------------
 
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -53,30 +26,20 @@ import java.util.Set;
 import tigase.server.Iq;
 import tigase.xmpp.impl.C2SDeliveryErrorProcessor;
 
-/**
- * MessageArchingPlugin is implementation of plugin which forwards messages
- * with type set to "chat" to MessageArchivingComponent to store this messages
- * in message archive.
- */
 public class MessageArchivePlugin
 				extends XMPPProcessor
 				implements XMPPProcessorIfc {
 	
 	public static final String DEFAULT_SAVE = "default-save";
 	
-	/** Field description */
 	public static final String LIST = "list";
 
-	/** Field description */
 	public static final String OWNER_JID = "owner";
 
-	/** Field description */
 	public static final String REMOVE = "remove";
 
-	/** Field description */
 	public static final String RETRIEVE = "retrieve";
 
-	/** Field description */
 	public static final String  XEP0136NS = "urn:xmpp:archive";
 	private static final String ARCHIVE   = "message-archive";
 	private static final String AUTO      = "auto";
@@ -109,7 +72,6 @@ public class MessageArchivePlugin
 		TYPES = Collections.unmodifiableSet(tmpTYPES);
 	}
 
-	//~--- fields ---------------------------------------------------------------
 
 	private StoreMethod globalDefaultStoreMethod = StoreMethod.Body;
 	private StoreMethod globalRequiredStoreMethod = StoreMethod.False;
@@ -117,14 +79,9 @@ public class MessageArchivePlugin
 	private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private JID              ma_jid    = null;
 
-	//~--- methods --------------------------------------------------------------
 
 	/**
-	 * Method description
-	 *
-	 *
 	 * @param settings
-	 *
 	 * @throws TigaseDBException
 	 */
 	@Override
@@ -147,7 +104,6 @@ public class MessageArchivePlugin
 				ma_jid });
 		System.out.println("MA LOADED = " + ma_jid.toString());
 		
-		// setting required and default level of archiving
 		if (settings.containsKey(REQUIRED_STORE_METHOD_KEY)) {
 			globalRequiredStoreMethod = StoreMethod.valueof((String) settings.get(REQUIRED_STORE_METHOD_KEY));
 		}
@@ -161,8 +117,6 @@ public class MessageArchivePlugin
 
 	/**
 	 * Method description
-	 *
-	 *
 	 * @param packet
 	 * @param session
 	 * @param repo
@@ -179,38 +133,26 @@ public class MessageArchivePlugin
 			return;
 		}
 		try {
-			if (Message.ELEM_NAME == packet.getElemName()) {
-				
-				// ignoring packets resent from c2s for redelivery as processing
-				// them would create unnecessary duplication of messages in archive
+			if (Objects.equals(Message.ELEM_NAME, packet.getElemName())) {
 				if (C2SDeliveryErrorProcessor.isDeliveryError(packet))
 					return;
-				
 				StanzaType type = packet.getType();
-
 				if ((packet.getElement().findChildStaticStr(Message.MESSAGE_BODY_PATH) ==
 						null) || ((type != null) && (type != StanzaType.chat) && (type != StanzaType
 						.normal))) {
 					return;
 				}
-
 				boolean auto = getAutoSave(session);
-
 				if (auto && (packet.getElemCDataStaticStr(Message.MESSAGE_BODY_PATH) != null)) {
 					StoreMethod storeMethod = getStoreMethod(session);
 					if (storeMethod == StoreMethod.False) {
-						// ignoring as False means we should not store anything
 						return;
 					}
-					
-					// redirecting to message archiving component
 					Packet result = packet.copyElementOnly();
-
 					result.setPacketTo(ma_jid);
 					result.getElement().addAttribute(OWNER_JID, session.getBareJID().toString());
 					switch (storeMethod) {
 						case Body:
-							// in this store method we should only store <body/> element
 							Element message = result.getElement();
 							for (Element elem : message.getChildren()) {
 								switch (elem.getName()) {
@@ -222,52 +164,37 @@ public class MessageArchivePlugin
 							}
 							break;
 						default:
-							// in other case we store whole message
 							break;
 					}
 					results.offer(result);
 				}
-			} else if (Iq.ELEM_NAME == packet.getElemName()) {
+			} else if (Objects.equals(Iq.ELEM_NAME, packet.getElemName())) {
 				if (ma_jid.equals(packet.getPacketFrom())) {
 					JID    connId = session.getConnectionId(packet.getStanzaTo());
 					Packet result = packet.copyElementOnly();
-
 					result.setPacketTo(connId);
 					results.offer(result);
-
 					return;
 				}
 				if ((packet.getType() != StanzaType.get) && (packet.getType() != StanzaType
 						.set)) {
 					return;
 				}
-
 				Element auto = packet.getElement().getChild("auto");
 				Element pref = packet.getElement().getChild("pref");
 				StoreMethod requiredStoreMethod = getRequiredStoreMethod(session);
-
 				if ((auto == null) && (pref == null)) {
-
-					// redirecting to message archiving component
 					Packet result = packet.copyElementOnly();
-
 					result.setPacketTo(ma_jid);
 					results.offer(result);
 				} else if (pref != null) {
 					if (packet.getType() == StanzaType.get) {
 						Element prefEl = new Element("pref");
-
 						prefEl.setXMLNS(XEP0136NS);
-
-						// auto
 						Element autoEl = new Element("auto");
-
 						autoEl.setAttribute("save", String.valueOf(getAutoSave(session)));
 						prefEl.addChild(autoEl);
-
-						// default
 						Element defaultEl = new Element("default");
-
 						defaultEl.setAttribute("otr", "forbid");
 						try {
 							RetentionType retentionType = VHostItemHelper.getRetentionType(session.getDomain());
@@ -292,14 +219,10 @@ public class MessageArchivePlugin
 							log.log(Level.WARNING, "could not retrieve expire setting for message archive for user {0}", 
 									session.getjid());
 						}
-
-								
 						StoreMethod storeMethod = getStoreMethod(session);
 						defaultEl.setAttribute("save", storeMethod.toString());
 						prefEl.addChild(defaultEl);
-
 						Element methodEl = new Element("method");
-
 						methodEl.setAttribute("type", "auto");
 						methodEl.setAttribute("use", "prefer");
 						prefEl.addChild(methodEl);
@@ -392,8 +315,6 @@ public class MessageArchivePlugin
 									session.setData(SETTINGS, EXPIRE, expire);
 								}
 								results.offer(packet.okResult((String) null, 0));
-								
-								// shouldn't we notify other connected resources? see section 2.4.of XEP-0136
 							}
 							catch (TigaseDBException ex) {
 								results.offer(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, null, false));
@@ -407,7 +328,6 @@ public class MessageArchivePlugin
 					String  val  = auto.getAttributeStaticStr("save");
 					if (val == null) val = "";
 					boolean save = false;
-
 					switch (val) {
 						case "true":
 						case "1":
@@ -422,7 +342,6 @@ public class MessageArchivePlugin
 									"Save value is incorrect or missing", false));
 							return;
 					}
-					
 					if (!save && requiredStoreMethod != StoreMethod.False) {
 						results.offer(Authorization.NOT_ACCEPTABLE.getResponseMessage(packet, 
 								"Required minimal message archiving level is " + requiredStoreMethod.toString() 
@@ -434,19 +353,15 @@ public class MessageArchivePlugin
 								"Message archiving is not allowed for domain " + session.getDomainAsJID().toString(), false));
 						return;
 					}
-					
 					try {
 						setAutoSave(session, save);
 						session.putCommonSessionData(ID + "/" + AUTO, save);
-
 						Element res = new Element("auto");
-
 						res.setXMLNS(XEP0136NS);
 						res.setAttribute("save", save
 								? "true"
 								: "false");
 						results.offer(packet.okResult(res, 0));
-
 						return;
 					} catch (TigaseDBException ex) {
 						log.log(Level.WARNING, "Error setting Message Archive state: {0}", ex
@@ -463,65 +378,32 @@ public class MessageArchivePlugin
 		}
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @return
-	 */
 	@Override
 	public String id() {
 		return ID;
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @return
-	 */
 	@Override
 	public String[][] supElementNamePaths() {
 		return ELEMENT_PATHS;
 		
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] supNamespaces() {
 		return XMLNSS;
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param session
-	 *
-	 * @return
-	 */
 	@Override
 	public Element[] supDiscoFeatures(final XMPPResourceConnection session) {
 		return DISCO_FEATURES;
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @return
-	 */
 	@Override
 	public Set<StanzaType> supTypes() {
 		return TYPES;
 	}
 	
-	//~--- get methods ----------------------------------------------------------
 
 	private boolean getAutoSave(final XMPPResourceConnection session)
 					throws NotAuthorizedException {
@@ -593,19 +475,7 @@ public class MessageArchivePlugin
 		
 		return save;
 	}
-	
-	//~--- set methods ----------------------------------------------------------
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param session
-	 * @param auto
-	 *
-	 * @throws NotAuthorizedException
-	 * @throws TigaseDBException
-	 */
 	public void setAutoSave(XMPPResourceConnection session, Boolean auto)
 					throws NotAuthorizedException, TigaseDBException {
 		session.setData(SETTINGS, AUTO, String.valueOf(auto));
@@ -618,6 +488,3 @@ public class MessageArchivePlugin
 		session.putCommonSessionData(ID + "/" + DEFAULT_SAVE, save);
 	}
 }
-
-
-//~ Formatted in Tigase Code Convention on 13/03/13
