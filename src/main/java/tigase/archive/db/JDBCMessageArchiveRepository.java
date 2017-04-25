@@ -397,19 +397,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					data_repo.checkTable( JIDS_TABLE, MYSQL_CREATE_JIDS );
 					data_repo.checkTable( MSGS_TABLE, MYSQL_CREATE_MSGS );
 					break;
-				case derby:
-					data_repo.checkTable( JIDS_TABLE, DERBY_CREATE_JIDS );
-					data_repo.checkTable( MSGS_TABLE, DERBY_CREATE_MSGS );
-					break;
-				case postgresql:
-					data_repo.checkTable( JIDS_TABLE, PGSQL_CREATE_JIDS );
-					data_repo.checkTable( MSGS_TABLE, PGSQL_CREATE_MSGS );
-					break;
-				case jtds:
-				case sqlserver:
-					data_repo.checkTable( JIDS_TABLE, SQLSERVER_CREATE_JIDS );
-					data_repo.checkTable( MSGS_TABLE, SQLSERVER_CREATE_MSGS );
-					break;
 			}
 			
 			checkDB();
@@ -419,28 +406,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 					data_repo.checkTable( TAGS_TABLE, MYSQL_CREATE_TAGS );
 					data_repo.checkTable( MSGS_TAGS_TABLE, MYSQL_CREATE_MSGS_TAGS );
 					break;
-				case derby:
-					data_repo.checkTable( TAGS_TABLE, DERBY_CREATE_TAGS );
-					data_repo.checkTable( MSGS_TAGS_TABLE, DERBY_CREATE_MSGS_TAGS );
-					break;
-				case postgresql:
-					data_repo.checkTable( TAGS_TABLE, PGSQL_CREATE_TAGS );
-					data_repo.checkTable( MSGS_TAGS_TABLE, PGSQL_CREATE_MSGS_TAGS );
-					break;
-				case jtds:
-				case sqlserver:
-					data_repo.checkTable( TAGS_TABLE, SQLSERVER_CREATE_TAGS );
-					data_repo.checkTable( MSGS_TAGS_TABLE, SQLSERVER_CREATE_MSGS_TAGS );
-					break;
 			}
 			
 			data_repo.initPreparedStatement(ADD_JID_QUERY, ADD_JID_QUERY);
 			data_repo.initPreparedStatement(GET_JID_ID_QUERY, GET_JID_ID_QUERY);
 			data_repo.initPreparedStatement(GET_JID_IDS_QUERY, GET_JID_IDS_QUERY);
-
 			data_repo.initPreparedStatement(ADD_MESSAGE, ADD_MESSAGE, Statement.RETURN_GENERATED_KEYS);
-			//data_repo.initPreparedStatement(GET_COLLECTIONS, GET_COLLECTIONS);
-			
 			Map<String,String> combinations = new HashMap<String,String>();
 			for (String combination : GET_COLLECTIONS_COMBINATIONS) {
 				StringBuilder sbMain = new StringBuilder();
@@ -505,10 +476,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				StringBuilder count = new StringBuilder().append(GENERIC_GET_COLLECTIONS_COUNT);
 				
 				switch ( data_repo.getDatabaseType() ) {
-					case jtds:
-					case sqlserver:
-						select.append(MSSQL2008_GET_COLLECTIONS_SELECT);
-						break;
 					default:
 						select.append(GENERIC_GET_COLLECTIONS_SELECT);
 						break;
@@ -518,11 +485,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				count.append(entry.getValue());
 				
 				switch ( data_repo.getDatabaseType() ) {
-					case jtds:
-					case sqlserver:
-						select.append(MSSQL2008_GET_COLLECTIONS_SELECT_GROUP);
-						count.append(MSSQL2008_GET_COLLECTIONS_COUNT_GROUP);
-						break;
 					default:
 						select.append(GENERIC_GET_COLLECTIONS_SELECT_GROUP + GENERIC_GET_COLLECTIONS_SELECT_ORDER);
 						count.append(GENERIC_GET_COLLECTIONS_COUNT_GROUP);
@@ -530,13 +492,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				}
 				
 				switch ( data_repo.getDatabaseType() ) {
-					case derby:
-						select.append(DERBY_LIMIT);
-						break;
-					case jtds:
-					case sqlserver:
-						select.append(MSSQL2008_LIMIT).append(MSSQL2008_GET_COLLECTIONS_SELECT_ORDER);
-						break;
 					default:
 						select.append(GENERIC_LIMIT);
 						break;
@@ -558,14 +513,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				boolean containsWith = entry.getKey().contains("WITH");
 				
 				switch ( data_repo.getDatabaseType() ) {
-					case jtds:
-					case sqlserver:
-						if (containsWith) {
-							select.append(MSSQL2008_GET_MESSAGES_START);
-						} else {
-							select.append(MSSQL2008_GET_MESSAGES_START_WITH);
-						}
-						break;
 					default:
 						if (containsWith) {
 							select.append(GENERIC_GET_MESSAGES_START);						
@@ -579,18 +526,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				count.append(entry.getValue());
 
 				switch (data_repo.getDatabaseType()) {
-					case derby:
-						select.append(GENERIC_GET_MESSAGES_ORDER_BY).append(DERBY_LIMIT);
-						break;
-					case jtds:
-					case sqlserver:
-						if (containsWith) {
-							select.append(MSSQL2008_GET_MESSAGES_END);
-						} else {
-							select.append(MSSQL2008_GET_MESSAGES_END_WITH);
-						}
-						select.append(MSSQL2008_LIMIT).append(GENERIC_GET_MESSAGES_ORDER_BY);
-						break;
 					default:
 						select.append(GENERIC_GET_MESSAGES_ORDER_BY).append(GENERIC_LIMIT);
 						break;
@@ -625,13 +560,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 			
 			data_repo.initPreparedStatement(GET_TAGS_FOR_USER_COUNT, GET_TAGS_FOR_USER_COUNT);
 			switch (data_repo.getDatabaseType()) {
-				case derby:
-					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + DERBY_LIMIT);
-					break;
-				case jtds:
-				case sqlserver:
-					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, SQLSERVER_GET_TAGS_FOR_USER + MSSQL2008_LIMIT + GET_TAGS_FOR_USER_ORDER);
-					break;
 				default:
 					data_repo.initPreparedStatement(GET_TAGS_FOR_USER, GET_TAGS_FOR_USER + GET_TAGS_FOR_USER_ORDER + GENERIC_LIMIT);					
 					break;
@@ -657,9 +585,6 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 				// if this happens then we have issue with old database schema and missing body columns in MSGS_TABLE
 				String alterTable = null;
 				switch (data_repo.getDatabaseType()) {
-					case derby:
-						alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BODY + " varchar(32672)";
-						break;
 					case mysql:
 						alterTable = "alter table " + MSGS_TABLE + " add " + MSGS_BODY + " text";
 						break;
@@ -1053,7 +978,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 	private List<Element> getCollectionsItems(BareJID owner, Criteria crit)
 					throws SQLException {
 		List<Element> results = new LinkedList<Element>();
-		ResultSet selectRs   = null;
+		ResultSet d   = null;
 		try {
 			PreparedStatement get_collections_st = data_repo.getPreparedStatement(owner, "GET_COLLECTIONS_" 
 					+ crit.getQueryName() + "_SELECT");

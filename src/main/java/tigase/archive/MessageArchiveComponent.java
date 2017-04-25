@@ -200,7 +200,8 @@ public class MessageArchiveComponent
 				Class<? extends MessageArchiveRepository> repoCls = null;
 				if (repoClsName == null)
 					repoCls = RepositoryFactory.getRepoClass(MessageArchiveRepository.class, uri);
-				else {
+				else
+					{
 					try {
 						repoCls = (Class<? extends MessageArchiveRepository>) ModulesManagerImpl.getInstance().forName(repoClsName);
 					} catch (ClassNotFoundException ex) {
