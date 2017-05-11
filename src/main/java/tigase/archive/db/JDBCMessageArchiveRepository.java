@@ -1,5 +1,6 @@
 package tigase.archive.db;
 
+import com.google.gson.Gson;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,6 +27,7 @@ import tigase.db.DataRepository;
 import tigase.db.Repository;
 import tigase.db.RepositoryFactory;
 import tigase.db.TigaseDBException;
+import tigase.server.redis.Message;
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
 import tigase.xml.SimpleParser;
@@ -253,9 +255,9 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
       "group by cast(m." + MSGS_TIMESTAMP + " as date), m." + MSGS_BUDDY_ID + ") x";
   private static final String GENERIC_LIMIT = " limit ? offset ?";          // limit, offset
   private static final String DERBY_LIMIT = " offset ? rows fetch next ? rows only";
-      // offset, limit
+  // offset, limit
   private static final String MSSQL2008_LIMIT = " where x.rn > ? and x.rn <= ?";
-      // offset, limit + offset
+  // offset, limit + offset
 
   private static final String DERBY_CREATE_TAGS = "create table "
       + TAGS_TABLE
@@ -750,6 +752,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
 
   public static final String MESSAGE_TYPE = "message_type";
   public static final String TYPE = "type";
+  public static final String body = "body";
 
   private DataRepository data_repo = null;
   private boolean storePlaintextBody = true;
@@ -1067,6 +1070,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
   public void archiveMessage(BareJID owner, BareJID buddy, Direction direction, Date timestamp,
       Element msg, Set<String> tags) {
     ResultSet rs = null;
+    Gson gson = new Gson();
     try {
       String owner_str = owner.toString();
       String buddy_str = buddy.toString();
@@ -1085,9 +1089,10 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
       PreparedStatement add_message_st = data_repo.getPreparedStatement(owner,
           ADD_MESSAGE);
       Long msgId = null;
-      Element typeElement = msg.getChild(MESSAGE_TYPE).getChild(TYPE);
-      // TODO: 25/04/2017 判断是否是单聊消息 
-      if (typeElement != null && typeElement.getCData().equals("chat")) {
+      Element element = msg.getChild(body);
+      Message message = gson.fromJson(element.getCData(), Message.class);
+      // TODO: 25/04/2017 判断是否是单聊消息
+      if (message != null && message.getChatType().equals("chat")) {
         synchronized (add_message_st) {
           add_message_st.setLong(1, owner_id);
           add_message_st.setLong(2, buddy_id);
@@ -1470,18 +1475,7 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
           addMessageToResults(msgs, startTimestamp, msg, item.timestamp, item.direction, item.with);
         }
       }
-
       crit.setStart(startTimestamp);
-
-      // no point in sorting messages by secs attribute as messages are already
-      // sorted in SQL query and also this sorting is incorrect
-      //			Collections.sort(msgs, new Comparator<Element>() {
-      //				@Override
-      //				public int compare(Element m1, Element m2) {
-      //					return m1.getAttributeStaticStr("secs").compareTo(
-      //							m2.getAttributeStaticStr("secs"));
-      //				}
-      //			});
     }
 
     return msgs;
@@ -1565,11 +1559,8 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
     }
   }
 
-  //~--- methods --------------------------------------------------------------
-
   private long addJidId(String jid) throws SQLException {
     PreparedStatement add_jid_st = data_repo.getPreparedStatement(null, ADD_JID_QUERY);
-
     try {
       synchronized (add_jid_st) {
         add_jid_st.setString(1, jid);
@@ -1579,19 +1570,12 @@ public class JDBCMessageArchiveRepository extends AbstractMessageArchiveReposito
       log.log(Level.FINEST, "Exception adding jid to tig_ma_jids table, it may occur "
           + "if other thread added this jid in the meantime", ex);
     }
-
-    // This is not the most effective solution but this method shouldn't be
-    // called very often so the perfrmance impact should be insignificant.
     long[] jid_ids = getJidsIds(jid);
-
     if (jid_ids != null) {
       return jid_ids[0];
     } else {
-
-      // That should never happen here, but just in case....
       log.log(Level.WARNING, "I have just added new jid but it was not found.... {0}",
           jid);
-
       return LONG_NULL;
     }
   }

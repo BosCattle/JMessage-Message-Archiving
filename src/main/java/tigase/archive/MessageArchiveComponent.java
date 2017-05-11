@@ -57,7 +57,7 @@ public class MessageArchiveComponent
 							.toString(), ex);
 				}
 				addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet,
-						(String) null, true));
+						null, true));
 			}
 		} catch (PacketErrorTypeException ex) {
 			if (log.isLoggable(Level.FINEST)) {
